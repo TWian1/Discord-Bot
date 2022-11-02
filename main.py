@@ -1,4 +1,4 @@
-import discord, time,math, random, sys, openai, os, youtube_dl
+import discord, time,sys, openai, os
 from dotenv import load_dotenv
 from gtts import gTTS
 from discord import FFmpegPCMAudio
@@ -8,10 +8,12 @@ configure()
 Token = str(os.getenv('Discord_Key'))
 global Joined
 Joined = False
+autosaid = False
 client = discord.Client(intents=discord.Intents.all())
 
 @client.event
 async def on_ready():
+    autosaid = False
     print(f'Logged in on {time.ctime(time.time())} as {client.user}')
 
 def check(checking, message):
@@ -21,10 +23,10 @@ def check(checking, message):
         return True
     except: return False
 
-def gpt3(input_text, temp, fpenalty):
+def gpt3(input_text, temp, fpenalty, mt):
     configure()
     openai.api_key = str(os.getenv('AI_Key'))
-    response = openai.Completion.create(engine="davinci-instruct-beta", prompt=input_text, temperature=temp, max_tokens=300, top_p=1, frequency_penalty=fpenalty, presence_penalty=0)
+    response = openai.Completion.create(engine="davinci-instruct-beta", prompt=input_text, temperature=temp, max_tokens=mt, top_p=1, frequency_penalty=fpenalty, presence_penalty=0)
     return response.choices[0].text
     
 def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj):
@@ -90,7 +92,7 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
             if permission == True and admin == False: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             if len(mes[3:].rstrip(" ")) == 0: return discord.Embed(title=".ai input", description="Returns an ai generated message based off of the input", color=0xFF5733), 4
             else: 
-                ai_out = gpt3(mes[3:], temp, fpenalty)
+                ai_out = gpt3(mes[3:], temp, fpenalty, 300)
                 print(len(ai_out))
                 return ai_out, 3
         elif check("add", mesl):
@@ -218,6 +220,7 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
         
 @client.event
 async def on_message(message):
+    print(message.content)
     data_file = open("data.txt", "r")
     data = data_file.readlines()
     counter = 0
@@ -248,6 +251,37 @@ async def on_message(message):
                 fpenalty = float(line)
             if counter == 9:
                 djs = [int(b) for b in line.split(",")]
+            if counter == 10:
+                autos = int(line)
+            if counter == 11:
+                voicemess = line
+    print(Admins)
+    if len(client.voice_clients) == 1 and autos == 1 and message.content[0] != ".": autosaid = True
+    else:autosaid = False
+    print(autosaid)
+    if autosaid:
+        print(message.channel.id)
+        if message.channel.id == int(voicemess):
+            if len(message.content) < 100:
+                voice = client.voice_clients[0]
+                if not(voice.is_playing() or voice.is_paused()):
+                    print("test")
+                    messager = message.content + gpt3(message.content, temp, fpenalty, 50).rstrip("|") + "|en|true"
+                    print(messager)
+                    voice_client = client.voice_clients[0]
+                    accent = 'it'
+                    slowed = False
+                    countermes = 0
+                    out = ""
+                    for a in messager.split("|"):
+                        countermes += 1
+                        if countermes == 1: out += a
+                        elif countermes == 2: accent = a.rstrip(" ").lower()
+                        elif countermes == 3:
+                            if a.rstrip(" ").lower() == 'true': slowed = True
+                    gTTS(text=out, lang=accent, slow=slowed).save("tts.mp3")
+                    source = FFmpegPCMAudio('tts.mp3')
+                    player = voice_client.play(source)
     data_file.close()
     Admin = False
     me = False
@@ -262,6 +296,54 @@ async def on_message(message):
                 #Master Commands
                 newmes = message.content[1:]
                 print("Processed " + newmes)
+                if Admin:
+                    if check("autosayon", newmes.lower()) and len(client.voice_clients) == 1:
+                        print("file")
+                        data_file = open("data.txt", "r")
+                        old_lines = data_file.readlines()
+                        data_file.close()
+                        counter = 0
+                        index = 0
+                        index2 = len(old_lines)
+                        for ind,k in enumerate(old_lines):
+                            if k[0] == "#": continue
+                            else: 
+                                counter += 1
+                                if counter == 10: index = ind
+                                if counter == 11: index2 = ind
+                        old_lines[index] = "1\n"
+                        print(newmes.lower()[10:])
+                        old_lines[index2] = newmes.lower()[10:]
+                        data_file = open("data.txt", "w")
+                        data_file.writelines(old_lines)
+                        data_file.close()
+                        voice_client = client.voice_clients[0]
+                        gTTS(text="AUTO AI SAY ON", lang="en", slow=False).save("tts.mp3")
+                        source = FFmpegPCMAudio('tts.mp3')
+                        player = voice_client.play(source)
+                    if check("autosayoff", newmes.lower()) and len(client.voice_clients) == 1:
+                        print("file")
+                        data_file = open("data.txt", "r")
+                        old_lines = data_file.readlines()
+                        data_file.close()
+                        counter = 0
+                        index = 0
+                        index2 = 0
+                        for ind,k in enumerate(old_lines):
+                            if k[0] == "#": continue
+                            else: 
+                                counter += 1
+                                if counter == 10: index = ind
+                                if counter == 11: index2 = ind
+                        old_lines[index] = "0\n"
+                        old_lines[index2] = "0\n"
+                        data_file = open("data.txt", "w")
+                        data_file.writelines(old_lines)
+                        data_file.close()
+                        voice_client = client.voice_clients[0]
+                        gTTS(text="AUTO AI SAY IS NOW OFF", lang="en", slow=False).save("tts.mp3")
+                        source = FFmpegPCMAudio('tts.mp3')
+                        player = voice_client.play(source)
                 if check("join", newmes.lower()):
                     if len(newmes[5:].lower().rstrip(" ")) == 0: 
                         await message.reply(embed=discord.Embed(title=".join", description="format: .join voice-channel-id\n\nexample: .join 298105398793827985\n\n\n\n  TO FIND THE VOICE CHANNEL ID turn on discord developer mode.  LOOK UP HOW TO!!! and then right click on the desired voice channel and at the bottom of the popup should be something saying copy id.", color=0xFF5733))
@@ -362,7 +444,7 @@ async def on_message(message):
                                         else: newout += "\n" + j.content
                                 print(len(newout))
                                 if len(newout) > 300: raise Exception
-                                await message.reply(gpt3(newout, temp, fpenalty))
+                                await message.reply(gpt3(newout, temp, fpenalty, 300))
                             except: await message.reply(embed=discord.Embed(title="Error", description="you must input a number between 1 and 10 and message lengths must be under 300 characters", color=0xFF5733))
                     else:
                         # out_types
