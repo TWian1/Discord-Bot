@@ -85,7 +85,6 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
             try:
                 title, description = mes[6:].split("|")[0], mes[6:].split("|")[1]
                 if title.rstrip(" ") == "" or description.rstrip(" ") == "": raise Exception
-                print("\nTitle: \"" + title + "\", Description: \"" + description + "\"")
                 return discord.Embed(title=title, description=description, color=0xFF5733), 1
             except:return discord.Embed(title=".embed Title | Description", description="Creates an embed", color=0xFF5733), 4
         elif check("dm", mesl):
@@ -135,20 +134,20 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
             if permission == True and admin == False: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             return discord.Embed(title="Ai settings", description="temperature: " + str(temp) + "\n\nfrequency penalty: " + str(fpenalty), color=0xFF5733), 4
         elif check("aiimage", mesl):
-            print("hi")
             if admin == False: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             print(mes[8:])
             if len(mes[8:].rstrip(" ")) == 0: return discord.Embed(title="Ai Image", description=".aiimage *prompt*", color=0xFF5733), 4
             checkresponse = checkaiimg(message)
             if checkresponse[0]:
-                if input("approve") == "y":
+                if me:
                     return [imgai(mes[8:], "512x512"), "Credits Left: " + str(checkresponse[1]) + "\n"], 6
                 else:
-                    return discord.Embed(title="No", description="Denied", color=0xFF5733), 4
+                    if input("approve") == "y":
+                        return [imgai(mes[8:], "512x512"), "Credits Left: " + str(checkresponse[1]) + "\n"], 6
+                    else:
+                        return discord.Embed(title="No", description="Denied", color=0xFF5733), 4
             else:
                 return discord.Embed(title="No", description="Insufficient funds", color=0xFF5733), 4
-            #if input("approve") == "y": 
-                #return imgai(mes[8:], "512x512"), 6
         elif mesl == "checkcredits":
             default_credits = 15
             user = message.author.id
@@ -173,7 +172,6 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
             if len(mes[3:].rstrip(" ")) == 0: return discord.Embed(title=".ai input", description="Returns an ai generated message based off of the input", color=0xFF5733), 4
             else: 
                 ai_out = gpt3(mes[3:], temp, fpenalty, 300)
-                print(len(ai_out))
                 return ai_out, 3
         elif check("add", mesl):
             try:
@@ -182,8 +180,6 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                         if len(mesl[12:]) == 0: return discord.Embed(title="Add credits", description=".add credits *credits* *user*", color=0xFF5733), 4
                         else:
                             newmesss = mesl[12:].split(" <@")
-                            print("user: " + newmesss[1].rstrip(">"))
-                            print("credits: " + newmesss[0])
                             user = int(newmesss[1].rstrip(">"))
                             dfile = open("names.txt", "r")
                             names = dfile.readlines()
@@ -253,8 +249,6 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                     if len(mesl[15:]) == 0: return discord.Embed(title="Remove credits", description=".remove credits *credits* *user*", color=0xFF5733), 4
                     else:
                         newmesss = mesl[15:].split(" <@")
-                        print("user: " + newmesss[1].rstrip(">"))
-                        print("credits: " + newmesss[0])
                         user = int(newmesss[1].rstrip(">"))
                         dfile = open("names.txt", "r")
                         names = dfile.readlines()
@@ -397,17 +391,14 @@ async def on_message(message):
                 autos = int(line)
             if counter == 11:
                 voicemess = line
-    print(Admins)
     if len(client.voice_clients) == 1 and autos == 1 and message.content[0] != ".": autosaid = True
     else:autosaid = False
-    print(autosaid)
     if autosaid:
         print(message.channel.id)
         if message.channel.id == int(voicemess):
             if len(message.content) < 100:
                 voice = client.voice_clients[0]
                 if not(voice.is_playing() or voice.is_paused()):
-                    print("test")
                     messager = message.content + gpt3(message.content, temp, fpenalty, 50).rstrip("|") + "|en|true"
                     print(messager)
                     voice_client = client.voice_clients[0]
@@ -434,8 +425,6 @@ async def on_message(message):
     if str(message.channel) == "Direct Message with Unknown User":
         if dj and not(message.author.id == os.getenv('Discord_ID')):
             if message.content[0] == ".":
-
-                #Master Commands
                 newmes = message.content[1:]
                 print("Processed " + newmes)
                 if Admin:
@@ -567,7 +556,8 @@ async def on_message(message):
                 try:
                     if check("ailast", message.content[1:].lower()):
                         permission = True
-                        if permission == True and Admin == False: 
+                        if permission == True and Admin == False:
+                            if not(me): return 0 
                             await message.reply(embed=discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733))
                             return 0
                         if len(message.content[7:].rstrip(" ")) == 0: await message.reply(embed=discord.Embed(title=".ailast number", description="Creates an ai message based on the last number of messages", color=0xFF5733))
