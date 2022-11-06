@@ -142,6 +142,8 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                 if me:
                     return [imgai(mes[8:], "512x512"), "Credits Left: " + str(checkresponse[1]) + "\n"], 6
                 else:
+                    verification = False
+                    if verification == False: return discord.Embed(title="No", description="Verification is off so this can't be processed", color=0xFF5733), 4
                     if input("approve") == "y":
                         return [imgai(mes[8:], "512x512"), "Credits Left: " + str(checkresponse[1]) + "\n"], 6
                     else:
