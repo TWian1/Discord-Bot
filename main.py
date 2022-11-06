@@ -23,12 +23,59 @@ def check(checking, message):
         return True
     except: return False
 
+def checkaiimg(message):
+    default_credits = 15
+    user = message.author.id
+    dfile = open("names.txt", "r")
+    names = dfile.readlines()
+    dfile.close()
+    dfile = open("credits.txt", "r")
+    creditslist = dfile.readlines()
+    dfile.close()
+    infile=False
+    indexinfile = 0
+    for b,a in enumerate(names):
+        if a.rstrip("\n") == str(user): 
+            infile = True
+            indexinfile = b
+            break
+    if infile == False:
+        dfile = open("names.txt", "w")
+        newnames = names
+        newnames.append(str(user) + "\n")
+        dfile.writelines(newnames)
+        dfile.close()
+        dfile = open("credits.txt", "w")
+        newcredits = creditslist
+        newcredits.append(str(default_credits) + "\n")
+        dfile.writelines(newcredits)
+        dfile.close()
+        for b,a in enumerate(names):
+            if a.rstrip("\n") == str(user): 
+                indexinfile = b
+                break
+    if int(creditslist[indexinfile].rstrip("\n")) > 0:
+        dfile = open("credits.txt", "w")
+        newcredits = creditslist
+        newcredits[indexinfile] = str(int(creditslist[indexinfile].rstrip("\n"))-1) + "\n"
+        dfile.writelines(newcredits)
+        dfile.close()
+        return True, int(creditslist[indexinfile].rstrip("\n"))
+    else:
+        return False, int(creditslist[indexinfile].rstrip("\n"))
+
 def gpt3(input_text, temp, fpenalty, mt):
     configure()
     openai.api_key = str(os.getenv('AI_Key'))
     response = openai.Completion.create(engine="davinci-instruct-beta", prompt=input_text, temperature=temp, max_tokens=mt, top_p=1, frequency_penalty=fpenalty, presence_penalty=0)
     return response.choices[0].text
     
+def imgai(prompt, size):
+    openai.api_key = str(os.getenv('AI_Key'))
+    response = openai.Image.create(prompt=prompt, n=1, size=size)
+    image_url = response['data'][0]['url']
+    return image_url
+
 def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj):
     try:
         mes = (message.content)[1:]
@@ -87,7 +134,40 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
             permission = True
             if permission == True and admin == False: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             return discord.Embed(title="Ai settings", description="temperature: " + str(temp) + "\n\nfrequency penalty: " + str(fpenalty), color=0xFF5733), 4
-        elif check("ai", mesl):
+        elif check("aiimage", mesl):
+            print("hi")
+            if admin == False: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
+            print(mes[8:])
+            if len(mes[8:].rstrip(" ")) == 0: return discord.Embed(title="Ai Image", description=".aiimage *prompt*", color=0xFF5733), 4
+            checkresponse = checkaiimg(message)
+            if checkresponse[0]:
+                if input("approve") == "y":
+                    return [imgai(mes[8:], "512x512"), "Credits Left: " + str(checkresponse[1]) + "\n"], 6
+                else:
+                    return discord.Embed(title="No", description="Denied", color=0xFF5733), 4
+            else:
+                return discord.Embed(title="No", description="Insufficient funds", color=0xFF5733), 4
+            #if input("approve") == "y": 
+                #return imgai(mes[8:], "512x512"), 6
+        elif mesl == "checkcredits":
+            default_credits = 15
+            user = message.author.id
+            dfile = open("names.txt", "r")
+            names = dfile.readlines()
+            dfile.close()
+            dfile = open("credits.txt", "r")
+            creditslist = dfile.readlines()
+            dfile.close()
+            infile=False
+            indexinfile = 0
+            for b,a in enumerate(names):
+                if a.rstrip("\n") == str(user): 
+                    infile = True
+                    indexinfile = b
+                    break
+            if infile == False: return discord.Embed(title="You Have " + str(default_credits) + " credits left.", color=0xFF5733), 4
+            else: return discord.Embed(title="You Have " + creditslist[indexinfile].rstrip("\n") + " credits left.", color=0xFF5733), 4 
+        elif check("ai ", mesl):
             permission = True
             if permission == True and admin == False: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             if len(mes[3:].rstrip(" ")) == 0: return discord.Embed(title=".ai input", description="Returns an ai generated message based off of the input", color=0xFF5733), 4
@@ -97,7 +177,37 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                 return ai_out, 3
         elif check("add", mesl):
             try:
-                if check("admin", mesl[4:]):
+                if check("credits", mesl[4:]):
+                    if admin:
+                        if len(mesl[12:]) == 0: return discord.Embed(title="Add credits", description=".add credits *credits* *user*", color=0xFF5733), 4
+                        else:
+                            newmesss = mesl[12:].split(" <@")
+                            print("user: " + newmesss[1].rstrip(">"))
+                            print("credits: " + newmesss[0])
+                            user = int(newmesss[1].rstrip(">"))
+                            dfile = open("names.txt", "r")
+                            names = dfile.readlines()
+                            dfile.close()
+                            dfile = open("credits.txt", "r")
+                            creditslist = dfile.readlines()
+                            dfile.close()
+                            infile=False
+                            indexinfile = 0
+                            for b,a in enumerate(names):
+                                if a.rstrip("\n") == str(user): 
+                                    infile = True
+                                    indexinfile = b
+                                    break
+                            if infile:
+                                dfile = open("credits.txt", "w")
+                                newcredits = creditslist
+                                newcredits[indexinfile] = str(int(creditslist[indexinfile].rstrip("\n")) + int(newmesss[0])) + "\n"
+                                dfile.writelines(newcredits)
+                                dfile.close()
+                                return discord.Embed(title="Credits Updated", description="Previous balance: " + str(int(creditslist[indexinfile].rstrip("\n"))-int(newmesss[0])) + "\nCurrent balance: " + creditslist[indexinfile].rstrip("\n"), color=0xFF5733), 4
+                            else: return discord.Embed(title="Error", description="Hasn't been used yet", color=0xFF5733), 4
+                    else: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
+                elif check("admin", mesl[4:]):
                     if me:
                         user = int(mes[12:].rstrip(">"))
                         data_file = open("data.txt", "r")
@@ -135,9 +245,41 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                         data_file.close()
                         return discord.Embed(title="DJs Updated", description=(client.get_user(user).name + "#" + client.get_user(user).discriminator) + " is now a DJ", color=0xFF5733), 4
                     else: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
-                else: return discord.Embed(title=".add", description="\"admin\" adds an admin\n\"dj\" adds a DJ", color=0xFF5733), 4
+                else: return discord.Embed(title=".add", description="\"admin\" adds an admin\n\"dj\" adds a DJ\n\"credits\" adds credits to specified user", color=0xFF5733), 4
             except: return discord.Embed(title=".add", description="\"admin\" adds an admin\n\"dj\" adds a DJ", color=0xFF5733), 4
         elif check ("remove", mesl):
+            if check("credits", mesl[7:]):
+                if admin:
+                    if len(mesl[15:]) == 0: return discord.Embed(title="Remove credits", description=".remove credits *credits* *user*", color=0xFF5733), 4
+                    else:
+                        newmesss = mesl[15:].split(" <@")
+                        print("user: " + newmesss[1].rstrip(">"))
+                        print("credits: " + newmesss[0])
+                        user = int(newmesss[1].rstrip(">"))
+                        dfile = open("names.txt", "r")
+                        names = dfile.readlines()
+                        dfile.close()
+                        dfile = open("credits.txt", "r")
+                        creditslist = dfile.readlines()
+                        dfile.close()
+                        infile=False
+                        indexinfile = 0
+                        for b,a in enumerate(names):
+                            if a.rstrip("\n") == str(user): 
+                                infile = True
+                                indexinfile = b
+                                break
+                        if infile:
+                            toremove = int(newmesss[0])
+                            if int(creditslist[indexinfile].rstrip("\n")) - toremove < 0: toremove = int(creditslist[indexinfile].rstrip("\n"))
+                            dfile = open("credits.txt", "w")
+                            newcredits = creditslist
+                            newcredits[indexinfile] = str(int(creditslist[indexinfile].rstrip("\n")) - toremove) + "\n"
+                            dfile.writelines(newcredits)
+                            dfile.close()
+                            return discord.Embed(title="Credits Updated", description="Previous balance: " + str(int(creditslist[indexinfile].rstrip("\n"))+toremove) + "\nCurrent balance: " + creditslist[indexinfile].rstrip("\n"), color=0xFF5733), 4
+                        else: return discord.Embed(title="Error", description="Hasn't been used yet", color=0xFF5733), 4
+                else: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             if check("admin", mesl[7:]):
                 if me:
                     user = int(mes[15:].rstrip(">"))
@@ -176,7 +318,7 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                     data_file.close()
                     return discord.Embed(title="DJS Updated", description=(client.get_user(user).name + "#" + client.get_user(user).discriminator) + " is now not a DJ", color=0xFF5733), 4
                 else: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
-            else: return discord.Embed(title=".remove", description="\"admin\" removes an admin\n\"dj\" removes a DJ", color=0xFF5733), 4
+            else: return discord.Embed(title=".remove", description="\"admin\" removes an admin\n\"dj\" removes a DJ\n\"credits\" removes credits from specified user", color=0xFF5733), 4
             
         elif mesl == "listadmins":
             out = ""
@@ -456,6 +598,7 @@ async def on_message(message):
                         # 3 Print reply
                         # 4 Embed reply
                         # 5 Specific direct message(can be multiple)
+                        # 6 link embed
                         out, out_type = Message_Function(message, Admin, me, Admins, Bot_DM, temp, fpenalty, djs, dj)
                         if out_type == 0: await message.channel.send(out)
                         elif out_type == 1: await message.channel.send(embed=out)
@@ -471,6 +614,10 @@ async def on_message(message):
                                     await user.send(out[0]) 
                                 else:
                                     await user.send(out[0][b]) 
+                        elif out_type == 6:
+                            embed=discord.Embed(title=out[1] + message.content[9:], color=0xFF5733)
+                            embed.set_image(url=out[0])
+                            await message.reply(embed=embed)
                         elif out_type == -1: await message.channel.send(out)
                         elif out_type == -2: 
                             print("No Command Found")
