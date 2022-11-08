@@ -645,8 +645,10 @@ async def on_message(message):
                                 gTTS(text="File Too Big", lang="en", slow=False).save("tts.mp3")
                                 source = FFmpegPCMAudio('tts.mp3')
                             atime = time.time()
-                            await m.edit(embed=discord.Embed(title="Finished and Playing, time to download: " + str(round(atime-btime)) + " Seconds", color=0xFF5733))
-                            player = voice_client.play(source, after=lambda x=None: voice_queue(voice_client))
+                            try:
+                                player = voice_client.play(source, after=lambda x=None: voice_queue(voice_client))
+                                await m.edit(embed=discord.Embed(title="Finished and Playing, time to download: " + str(round(atime-btime)) + " Seconds", color=0xFF5733))
+                            except: await m.edit(embed=discord.Embed(title="Download error or someone else was already downloading", color=0xFF5733))
                         else:
                             linkmes = True
                             if messager[0:8] != "https://": 
