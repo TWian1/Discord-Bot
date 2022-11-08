@@ -1,4 +1,4 @@
-import discord, time,sys, openai, os, asyncio
+import discord, time,sys, openai, os
 from dotenv import load_dotenv
 from pytube import YouTube, Search
 from gtts import gTTS
