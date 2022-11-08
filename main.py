@@ -1,4 +1,4 @@
-import discord, time,sys, openai, os
+import discord, time,sys, openai, os, asyncio
 from dotenv import load_dotenv
 from pytube import YouTube, Search
 from gtts import gTTS
@@ -65,9 +65,12 @@ def check_queue():
         ab.writelines(wlist)
         ab.close()
         if yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().filesize <= 150000000:
-            yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().download()                    
+        #if True:
+            yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().download()   
+            print(os.listdir())                 
             for o in os.listdir():
                 if o == "yt.mp3": os.remove("yt.mp3")
+                print("removed")
             for o in os.listdir():
                 if o[-3:] == "mp4": os.rename(o, "yt.mp3")
             source = FFmpegPCMAudio("yt.mp3")
@@ -627,6 +630,7 @@ async def on_message(message):
                             m = await message.reply(embed=discord.Embed(title="Downloading", color=0xFF5733))
                             btime = time.time()
                             yt = YouTube(messager)
+                            print(yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().filesize)
                             if yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().filesize <= 150000000:
                                 yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().download()
                                 
@@ -683,7 +687,8 @@ async def on_message(message):
                     else:
                         out = ""
                         for b,c in enumerate(lines):
-                            title = "test"
+                            title = YouTube(c.rstrip("\n"))
+                            title = str(title.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().title)
                             if b == 0: out += str(b+1) + ". " + title
                             else: out += "\n" + str(b+1) + ". " + title
                         await message.reply(embed=discord.Embed(title="Queue", description=out, color=0xFF5733))
