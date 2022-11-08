@@ -1,5 +1,6 @@
 import discord, time,sys, openai, os
 from dotenv import load_dotenv
+from pytube import YouTube, Search
 from gtts import gTTS
 from discord import FFmpegPCMAudio
 def configure():
@@ -7,21 +8,82 @@ def configure():
 configure()
 Token = str(os.getenv('Discord_Key'))
 global Joined
-Joined = False
 autosaid = False
 client = discord.Client(intents=discord.Intents.all())
 
 @client.event
 async def on_ready():
     autosaid = False
+    a = open("queue.txt", "w")
+    a.writelines([])
+    a.close()
     print(f'Logged in on {time.ctime(time.time())} as {client.user}')
 
+@client.event
+async def on_voice_state_update(member, before, after):
+    try:
+        vclient = client.voice_clients[0]
+        if len(vclient.channel.members) == 1: 
+            await vclient.disconnect()
+            print("Disconnecting") 
+    except:pass
+
+def getvcsearch(id, client):
+    guilds = client.guilds
+    for a in guilds:
+        for b in a.members:
+            if id == b.id:
+                try: 
+                    return str(b.voice.channel.id), True
+                    gid = a.id
+                except: pass
+    return 0, False
 def check(checking, message):
     try:
         for a,b in enumerate(list(checking)):
             if message[a] != b: return False
         return True
     except: return False
+
+def check_queue():
+    print("checking")
+    ab = open("queue.txt", "r")
+    lines = ab.readlines()
+    ab.close()
+    newlist = []
+    for a in lines:
+        try: 
+            if a[0:8] == "https://":
+                newlist.append(a)
+        except:pass
+    if len(newlist) != 0:
+        yt = YouTube(newlist.pop(0))
+        wlist = []
+        for a in newlist:
+            wlist.append(a + "\n")
+        ab = open("queue.txt", "w")
+        ab.writelines(wlist)
+        ab.close()
+        if yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().filesize <= 150000000:
+            yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().download()                    
+            for o in os.listdir():
+                if o == "yt.mp3": os.remove("yt.mp3")
+            for o in os.listdir():
+                if o[-3:] == "mp4": os.rename(o, "yt.mp3")
+            source = FFmpegPCMAudio("yt.mp3")
+        else:
+            gTTS(text="File Too Big", lang="en", slow=False).save("tts.mp3")
+            source = FFmpegPCMAudio('tts.mp3')
+        return source
+        
+def voice_queue(vc):
+    ab = open("queue.txt", "r")
+    lines = ab.readlines()
+    ab.close()
+    if len(lines) == 0:
+        return 0
+    source = check_queue()
+    vc.play(source, after=lambda x=None: voice_queue(vc))
 
 def checkaiimg(message):
     default_credits = 15
@@ -134,7 +196,7 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
             if permission == True and admin == False: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             return discord.Embed(title="Ai settings", description="temperature: " + str(temp) + "\n\nfrequency penalty: " + str(fpenalty), color=0xFF5733), 4
         elif check("aiimage", mesl):
-            if admin == False: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
+            if False: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             print(mes[8:])
             if len(mes[8:].rstrip(" ")) == 0: return discord.Embed(title="Ai Image", description=".aiimage *prompt*", color=0xFF5733), 4
             checkresponse = checkaiimg(message)
@@ -142,7 +204,7 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                 if me:
                     return [imgai(mes[8:], "512x512"), "Credits Left: " + str(checkresponse[1]) + "\n"], 6
                 else:
-                    verification = False
+                    verification = True
                     if verification == False: return discord.Embed(title="No", description="Verification is off so this can't be processed", color=0xFF5733), 4
                     if input("approve") == "y":
                         return [imgai(mes[8:], "512x512"), "Credits Left: " + str(checkresponse[1]) + "\n"], 6
@@ -169,7 +231,7 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
             if infile == False: return discord.Embed(title="You Have " + str(default_credits) + " credits left.", color=0xFF5733), 4
             else: return discord.Embed(title="You Have " + creditslist[indexinfile].rstrip("\n") + " credits left.", color=0xFF5733), 4 
         elif check("ai ", mesl):
-            permission = True
+            permission = False
             if permission == True and admin == False: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             if len(mes[3:].rstrip(" ")) == 0: return discord.Embed(title=".ai input", description="Returns an ai generated message based off of the input", color=0xFF5733), 4
             else: 
@@ -426,6 +488,7 @@ async def on_message(message):
     if message.author.id in Super_Admins: me = Admin = dj = True
     if str(message.channel) == "Direct Message with Unknown User":
         if dj and not(message.author.id == os.getenv('Discord_ID')):
+            if len(message.content) == 0: return 0
             if message.content[0] == ".":
                 newmes = message.content[1:]
                 print("Processed " + newmes)
@@ -478,20 +541,52 @@ async def on_message(message):
                         source = FFmpegPCMAudio('tts.mp3')
                         player = voice_client.play(source)
                 if check("join", newmes.lower()):
+                    mestoid = newmes[5:]
+                    
                     if len(newmes[5:].lower().rstrip(" ")) == 0: 
-                        await message.reply(embed=discord.Embed(title=".join", description="format: .join voice-channel-id\n\nexample: .join 298105398793827985\n\n\n\n  TO FIND THE VOICE CHANNEL ID turn on discord developer mode.  LOOK UP HOW TO!!! and then right click on the desired voice channel and at the bottom of the popup should be something saying copy id.", color=0xFF5733))
-                        return 0
+                        #await message.reply(embed=discord.Embed(title=".join", description="format: .join voice-channel-id\n\nexample: .join 298105398793827985\n\n\n\n  TO FIND THE VOICE CHANNEL ID turn on discord developer mode.  LOOK UP HOW TO!!! and then right click on the desired voice channel and at the bottom of the popup should be something saying copy id.", color=0xFF5733))
+                        #return 0
+                        h = message.author.id
+                        outv = getvcsearch(h, client)
+                        if outv[1] == False:
+                            await message.reply(embed=discord.Embed(title="Not in a voice channel", description="Join a voice channel for the bot to join", color=0xFF5733))
+                            return 0
+                        else: mestoid = outv[0]
+
                     if len(client.voice_clients) == 0:
-                        ch_id = int(newmes[5:]) 
+                        
+                        ch_id = int(mestoid) 
                         print(ch_id)
-                        await client.get_channel(ch_id).connect()
-                        Joined = True
-                        await message.reply(embed=discord.Embed(title="Voice channel Joined", description=".join\n.leave\n.say\n.pause\n.unpause\n.play", color=0xFF5733))
+                        if len(client.get_channel(ch_id).members) >= 1: 
+                            await client.get_channel(ch_id).connect()
+                            await message.reply(embed=discord.Embed(title="Voice channel Joined", description=".join\n.leave\n.say\n.pause\n.unpause\n.play", color=0xFF5733))
+                        else:
+                            await message.reply(embed=discord.Embed(title="No one in voice channel", description="someone needs to be in the channel to connect", color=0xFF5733))
                     else:message.reply(embed=discord.Embed(title="Already in voice channel", color=0xFF5733))
                 if newmes.lower() == "leave":
                     if len(client.voice_clients) == 1:
                         await client.voice_clients[0].disconnect()
                         await message.reply(embed=discord.Embed(title="Voice channel left", color=0xFF5733))
+                        ab = open("queue.txt", "w")
+                        ab.writelines([])
+                        ab.close()
+                        data_file = open("data.txt", "r")
+                        old_lines = data_file.readlines()
+                        data_file.close()
+                        counter = 0
+                        index = 0
+                        index2 = 0
+                        for ind,k in enumerate(old_lines):
+                            if k[0] == "#": continue
+                            else: 
+                                counter += 1
+                                if counter == 10: index = ind
+                                if counter == 11: index2 = ind
+                        old_lines[index] = "0\n"
+                        old_lines[index2] = "0\n"
+                        data_file = open("data.txt", "w")
+                        data_file.writelines(old_lines)
+                        data_file.close()
                     else: await message.reply(embed=discord.Embed(title="Not in A voice Channel", color=0xFF5733))
                 if newmes.lower() == "help": await message.reply(embed=discord.Embed(title="DJ Commands", description="\n**Prefix: .**\n\n**Commands**\njoin - joins the specified voice channel(do .join for more info)\n.leave - leaves the voice channel\n.say - using tts says the message(.say for more info)\n.pause - pauses the audio\n.unpause - unpauses the audio\n.play - CURRENTLY NOT IMPLEMENTED", color=0xFF5733))
                 if check("say", newmes.lower()):
@@ -521,12 +616,46 @@ async def on_message(message):
                 if check("play", newmes.lower()):
                     if len(newmes[5:].lower().rstrip(" ")) == 0: return 0 
                     if len(client.voice_clients) == 1:
+                        messager = str(newmes[5:]) 
                         voice = client.voice_clients[0]
                         if not(voice.is_playing() or voice.is_paused()):
-                            messager = str(newmes[5:]) 
+                            print(messager[0:7])
+                            if messager[0:8] != "https://":
+                                messager = str(Search(messager).results[0].watch_url)
+                                await message.reply("Playing: " + messager)
                             voice_client = client.voice_clients[0]
-                            source = FFmpegPCMAudio(messager)
-                            player = voice_client.play(source)
+                            m = await message.reply(embed=discord.Embed(title="Downloading", color=0xFF5733))
+                            btime = time.time()
+                            yt = YouTube(messager)
+                            if yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().filesize <= 150000000:
+                                yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().download()
+                                
+                                for o in os.listdir():
+                                    if o == "yt.mp3":
+                                        os.remove("yt.mp3")
+                                for o in os.listdir():
+                                    if o[-3:] == "mp4":
+                                        os.rename(o, "yt.mp3")
+                                source = FFmpegPCMAudio("yt.mp3")
+                            else:
+                                gTTS(text="File Too Big", lang="en", slow=False).save("tts.mp3")
+                                source = FFmpegPCMAudio('tts.mp3')
+                            atime = time.time()
+                            await m.edit(embed=discord.Embed(title="Finished and Playing, time to download: " + str(round(atime-btime)) + " Seconds", color=0xFF5733))
+                            player = voice_client.play(source, after=lambda x=None: voice_queue(voice_client))
+                        else:
+                            linkmes = True
+                            if messager[0:8] != "https://": 
+                                print("searched")
+                                linkmes = False
+                                messager = str(Search(messager).results[0].watch_url)
+                            ab = open("queue.txt", "a")
+                            ab.write(messager+"\n")
+                            ab.close()
+                            ab = open("queue.txt", "r")
+                            await message.reply(embed=discord.Embed(title="Added to queue", description="Position: " + str(len(ab.readlines())), color=0xFF5733))
+                            if linkmes == False: await message.reply(messager)
+                            ab.close()
                     else: await message.reply(embed=discord.Embed(title="Not in A voice Channel", color=0xFF5733))
                 if newmes.lower() == "pause":
                     if len(client.voice_clients) == 1:
@@ -540,10 +669,31 @@ async def on_message(message):
                         if voice.is_paused():
                             voice.resume()
                     else: await message.reply(embed=discord.Embed(title="Not in A voice Channel", color=0xFF5733))
+                if newmes.lower() == "skip":
+                    voice = client.voice_clients[0]
+                    voice.stop()
+                    voice_queue(voice)
+                    await message.reply(embed=discord.Embed(title="Skipped", color=0xFF5733))
+                if newmes.lower() == "queue":
+                    ab = open("queue.txt", "r")
+                    lines = ab.readlines()
+                    ab.close()
+                    if len(lines) == 0:
+                        await message.reply(embed=discord.Embed(title="No Queue", color=0xFF5733))
+                    else:
+                        out = ""
+                        for b,c in enumerate(lines):
+                            title = "test"
+                            if b == 0: out += str(b+1) + ". " + title
+                            else: out += "\n" + str(b+1) + ". " + title
+                        await message.reply(embed=discord.Embed(title="Queue", description=out, color=0xFF5733))
                 if newmes.lower() == "stop":
                     if len(client.voice_clients) == 1:
                         voice = client.voice_clients[0]
                         voice.stop()
+                        ab = open("queue.txt", "w")
+                        ab.writelines([])
+                        ab.close()
                     else: await message.reply(embed=discord.Embed(title="Not in A voice Channel", color=0xFF5733))
 
         if str(message.author.name) != "TWIan" and str(message.author.name) != "TWbot" and DMDM:
