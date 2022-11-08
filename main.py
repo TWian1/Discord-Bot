@@ -52,18 +52,14 @@ def writinglines(file, content):
     ab.close()
 def check_queue():
     print("checking")
-    lines = readinglines("queue.txt")
-    newlist = []
+    lines, newlist = readinglines("queue.txt"),[]
     for a in lines:
         try: 
-            if a[0:8] == "https://":
-                newlist.append(a)
+            if a[0:8] == "https://": newlist.append(a)
         except:pass
     if len(newlist) != 0:
-        yt = YouTube(newlist.pop(0))
-        wlist = []
-        for a in newlist:
-            wlist.append(a + "\n")
+        yt,wlist = YouTube(newlist.pop(0)),[]
+        for a in newlist: wlist.append(a + "\n")
         writinglines("queue.txt", wlist)
         if yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().filesize <= 150000000:
             yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().download()                  
@@ -83,22 +79,15 @@ def voice_queue(vc):
     source = check_queue()
     vc.play(source, after=lambda x=None: voice_queue(vc))
 def checkaiimg(message):
-    default_credits = 15
-    user = message.author.id
-    names = readinglines("names.txt")
-    creditslist = readinglines("credits.txt")
-    infile=False
-    indexinfile = 0
+    default_credits, user, names, creditslist, infile, indexinfile = 15, message.author.id, readinglines("names.txt"), readinglines("credits.txt"), False, 0
     for b,a in enumerate(names):
         if a.rstrip("\n") == str(user): 
-            infile = True
-            indexinfile = b
+            infile, indexinfile = True,b
             break
     if infile == False:
-        newnames = names
+        newnames,newcredits = names,creditslist
         newnames.append(str(user) + "\n")
         writinglines("names.txt", newnames)
-        newcredits = creditslist
         newcredits.append(str(default_credits) + "\n")
         writinglines("credits.txt", newcredits)
         for b,a in enumerate(names):
@@ -125,8 +114,7 @@ def imgai(prompt, size):
 
 def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj):
     try:
-        mes = (message.content)[1:]
-        mesl = mes.lower()
+        mes, mesl = (message.content)[1:], (message.content)[1:].lower()
         print("\nprocessing: \"" + mes + "\"")
         if check("embed", mesl):
             try:
@@ -143,9 +131,7 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
             if permission == True and admin == False: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             if len(mes[7:].rstrip(" ")) == 0: return discord.Embed(title=".aitemp number", description="changes the temperature of the ai(how random it is) between 0 and 1", color=0xFF5733), 4
             else:
-                old_lines = readinglines("data.txt")
-                counter = 0
-                index = 0
+                old_lines,counter.index = readinglines("data.txt"),0,0
                 for ind,k in enumerate(old_lines):
                     if k[0] == "#": continue
                     else: 
@@ -158,9 +144,7 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
             if permission == True and admin == False: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             if len(mes[10:].rstrip(" ")) == 0: return discord.Embed(title=".aifpenalty number", description="changes the the penalty for repeating things between 0 and 2", color=0xFF5733), 4
             else:
-                old_lines = readinglines("data.txt")
-                counter = 0
-                index = 0
+                old_lines,counter.index = readinglines("data.txt"),0,0
                 for ind,k in enumerate(old_lines):
                     if k[0] == "#": continue
                     else: 
@@ -178,28 +162,18 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
             if len(mes[8:].rstrip(" ")) == 0: return discord.Embed(title="Ai Image", description=".aiimage *prompt*", color=0xFF5733), 4
             checkresponse = checkaiimg(message)
             if checkresponse[0]:
-                if me:
-                    return [imgai(mes[8:], "512x512"), "Credits Left: " + str(checkresponse[1]) + "\n"], 6
+                if me: return [imgai(mes[8:], "512x512"), "Credits Left: " + str(checkresponse[1]) + "\n"], 6
                 else:
                     verification = True
                     if verification == False: return discord.Embed(title="No", description="Verification is off so this can't be processed", color=0xFF5733), 4
-                    if input("approve") == "y":
-                        return [imgai(mes[8:], "512x512"), "Credits Left: " + str(checkresponse[1]) + "\n"], 6
-                    else:
-                        return discord.Embed(title="No", description="Denied", color=0xFF5733), 4
-            else:
-                return discord.Embed(title="No", description="Insufficient funds", color=0xFF5733), 4
+                    if input("approve") == "y": return [imgai(mes[8:], "512x512"), "Credits Left: " + str(checkresponse[1]) + "\n"], 6
+                    else: return discord.Embed(title="No", description="Denied", color=0xFF5733), 4
+            else: return discord.Embed(title="No", description="Insufficient funds", color=0xFF5733), 4
         elif mesl == "checkcredits":
-            default_credits = 15
-            user = message.author.id
-            names = readinglines("names.txt")
-            creditslist = readinglines("credits.txt")
-            infile=False
-            indexinfile = 0
+            default_credits, user, names, creditslist, infile, indexinfile = 15, message.author.id, readinglines("names.txt"), readinglines("credits.txt"), False, 0
             for b,a in enumerate(names):
                 if a.rstrip("\n") == str(user): 
-                    infile = True
-                    indexinfile = b
+                    infile, indexinfile = True,b
                     break
             if infile == False: return discord.Embed(title="You Have " + str(default_credits) + " credits left.", color=0xFF5733), 4
             else: return discord.Embed(title="You Have " + creditslist[indexinfile].rstrip("\n") + " credits left.", color=0xFF5733), 4 
@@ -216,16 +190,10 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                     if admin:
                         if len(mesl[12:]) == 0: return discord.Embed(title="Add credits", description=".add credits *credits* *user*", color=0xFF5733), 4
                         else:
-                            newmesss = mesl[12:].split(" <@")
-                            user = int(newmesss[1].rstrip(">"))
-                            names = readinglines("names.txt")
-                            creditslist = readinglines("credits.txt")
-                            infile=False
-                            indexinfile = 0
+                            newmesss, user, names, creditslist, infile, indexinfile = mesl[12:].split(" <@"), int(newmesss[1].rstrip(">")), readinglines("names.txt"), readinglines("credits.txt"), False, 0
                             for b,a in enumerate(names):
                                 if a.rstrip("\n") == str(user): 
-                                    infile = True
-                                    indexinfile = b
+                                    infile,indexinfile = True,b
                                     break
                             if infile:
                                 newcredits = creditslist
@@ -236,10 +204,7 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                     else: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
                 elif check("admin", mesl[4:]):
                     if me:
-                        user = int(mes[12:].rstrip(">"))
-                        old_lines = readinglines("data.txt")
-                        counter = 0
-                        index = 0
+                        user,old_lines,counter,index = int(mes[12:].rstrip(">")),readinglines("data.txt"),0,0
                         for ind,k in enumerate(old_lines):
                             if k[0] == "#": continue
                             else: 
@@ -251,10 +216,7 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                     else: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
                 elif check("dj", mesl[4:]):
                     if admin:
-                        user = int(mes[9:].rstrip(">"))
-                        old_lines = readinglines("data.txt")
-                        counter = 0
-                        index = 0
+                        user,old_lines,counter,index = int(mes[9:].rstrip(">")),readinglines("data.txt"),0,0
                         for ind,k in enumerate(old_lines):
                             if k[0] == "#": continue
                             else: 
@@ -271,34 +233,22 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                 if admin:
                     if len(mesl[15:]) == 0: return discord.Embed(title="Remove credits", description=".remove credits *credits* *user*", color=0xFF5733), 4
                     else:
-                        newmesss = mesl[15:].split(" <@")
-                        user = int(newmesss[1].rstrip(">"))
-                        names = readinglines("names.txt")
-                        creditslist = readinglines("credits.txt")
-                        infile=False
-                        indexinfile = 0
+                        newmesss,user,names,creditslist,infile,indexinfile = mesl[15:].split(" <@"),int(newmesss[1].rstrip(">")),readinglines("names.txt"),readinglines("credits.txt"),False,0
                         for b,a in enumerate(names):
                             if a.rstrip("\n") == str(user): 
-                                infile = True
-                                indexinfile = b
+                                infile,indexinfile = True,b
                                 break
                         if infile:
-                            toremove = int(newmesss[0])
+                            toremove,newcredits = int(newmesss[0]),creditslist
                             if int(creditslist[indexinfile].rstrip("\n")) - toremove < 0: toremove = int(creditslist[indexinfile].rstrip("\n"))
-                            dfile = open("credits.txt", "w")
-                            newcredits = creditslist
                             newcredits[indexinfile] = str(int(creditslist[indexinfile].rstrip("\n")) - toremove) + "\n"
-                            dfile.writelines(newcredits)
-                            dfile.close()
+                            writinglines("credits.txt", newcredits)
                             return discord.Embed(title="Credits Updated", description="Previous balance: " + str(int(creditslist[indexinfile].rstrip("\n"))+toremove) + "\nCurrent balance: " + creditslist[indexinfile].rstrip("\n"), color=0xFF5733), 4
                         else: return discord.Embed(title="Error", description="Hasn't been used yet", color=0xFF5733), 4
                 else: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             if check("admin", mesl[7:]):
                 if me:
-                    user = int(mes[15:].rstrip(">"))
-                    old_lines = readinglines("data.txt")
-                    counter = 0
-                    index = 0
+                    user,old_lines,counter,index = int(mes[15:].rstrip(">")),readinglines("data.txt"),0,0
                     for ind,k in enumerate(old_lines):
                         if k[0] == "#": continue
                         else: 
@@ -310,10 +260,7 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                 else: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             elif check("dj", mesl[7:]):
                 if admin:
-                    user = int(mes[12:].rstrip(">"))
-                    old_lines = readinglines("data.txt")
-                    counter = 0
-                    index = 0
+                    user,old_lines,counter,index = int(mes[12:].rstrip(">")),readinglines("data.txt"),0,0
                     for ind,k in enumerate(old_lines):
                         if k[0] == "#": continue
                         else: 
@@ -353,7 +300,6 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
 
 @client.event
 async def on_message(message):
-    print(message.content)
     data_file = open("data.txt", "r")
     data = data_file.readlines()
     counter = 0
@@ -391,7 +337,6 @@ async def on_message(message):
     if len(client.voice_clients) == 1 and autos == 1 and message.content[0] != ".": autosaid = True
     else:autosaid = False
     if autosaid:
-        print(message.channel.id)
         if message.channel.id == int(voicemess):
             if len(message.content) < 100:
                 voice = client.voice_clients[0]
@@ -413,9 +358,7 @@ async def on_message(message):
                     source = FFmpegPCMAudio('tts.mp3')
                     player = voice_client.play(source)
     data_file.close()
-    Admin = False
-    me = False
-    dj = False
+    Admin = me = dj = False
     if message.author.id in Admins: Admin = dj = True
     if message.author.id in djs: dj = True
     if message.author.id in Super_Admins: me = Admin = dj = True
@@ -428,9 +371,7 @@ async def on_message(message):
                 if len(client.voice_clients) == 1:voice = client.voice_clients[0]
                 if Admin:
                     if check("autosayon", newmes.lower()) and len(client.voice_clients) == 1:
-                        old_lines = readinglines("data.txt")
-                        counter = 0
-                        index = 0
+                        old_lines,counter,index = readinglines("data.txt"),0,0
                         index2 = len(old_lines)
                         for ind,k in enumerate(old_lines):
                             if k[0] == "#": continue
@@ -447,10 +388,7 @@ async def on_message(message):
                         source = FFmpegPCMAudio('tts.mp3')
                         player = voice.play(source)
                     if check("autosayoff", newmes.lower()) and len(client.voice_clients) == 1:
-                        old_lines = readinglines("data.txt")
-                        counter = 0
-                        index = 0
-                        index2 = 0
+                        old_lines,counter,index,index2 = readinglines("data.txt"),0,0,0
                         for ind,k in enumerate(old_lines):
                             if k[0] == "#": continue
                             else: 
@@ -486,12 +424,7 @@ async def on_message(message):
                         await client.voice_clients[0].disconnect()
                         await message.reply(embed=discord.Embed(title="Voice channel left", color=0xFF5733))
                         writinglines("queue.txt", [])
-                        data_file = open("data.txt", "r")
-                        old_lines = data_file.readlines()
-                        data_file.close()
-                        counter = 0
-                        index = 0
-                        index2 = 0
+                        old_lines,counter,index,index2 = readinglines("data.txt"),0,0,0
                         for ind,k in enumerate(old_lines):
                             if k[0] == "#": continue
                             else: 
@@ -509,11 +442,7 @@ async def on_message(message):
                         return 0
                     if len(client.voice_clients) == 1:
                         if not(voice.is_playing() or voice.is_paused()):
-                            messager = str(newmes[4:]) 
-                            accent = 'it'
-                            slowed = False
-                            countermes = 0
-                            out = ""
+                            messager,accent,slowed,countermes,out = str(newmes[4:]),'it',False,0,""
                             for a in messager.split("|"):
                                 countermes += 1
                                 if countermes == 1: out += a
@@ -609,15 +538,7 @@ async def on_message(message):
             if message.content[0] == ".":
                 try:
                     # out_types
-                    # -2 Not a command
-                    # -1 Error print
-                    # 0 Print
-                    # 1 Embed
-                    # 2 Direct message author
-                    # 3 Print reply
-                    # 4 Embed reply
-                    # 5 Specific direct message(can be multiple)
-                    # 6 link embed
+                    # -2 Not a command || -1 Error print || 0 Print || 1 Embed || 2 Direct message author || 3 Print reply || 4 Embed reply || 5 Specific direct message(can be multiple) || 6 link embed
                     out, out_type = Message_Function(message, Admin, me, Admins, Bot_DM, temp, fpenalty, djs, dj)
                     if out_type == 0: await message.channel.send(out)
                     elif out_type == 1: await message.channel.send(embed=out)
