@@ -7,16 +7,13 @@ def configure():
     load_dotenv()
 configure()
 Token = str(os.getenv('Discord_Key'))
-global Joined
 autosaid = False
 client = discord.Client(intents=discord.Intents.all())
 
 @client.event
 async def on_ready():
     autosaid = False
-    a = open("queue.txt", "w")
-    a.writelines([])
-    a.close()
+    writinglines("queue.txt", [])
     print(f'Logged in on {time.ctime(time.time())} as {client.user}')
 
 @client.event
@@ -44,12 +41,18 @@ def check(checking, message):
             if message[a] != b: return False
         return True
     except: return False
-
+def readinglines(file):
+    ab = open(file, "r")
+    a = ab.readlines()
+    ab.close()
+    return a
+def writinglines(file, content):
+    ab = open(file, "w")
+    ab.writelines(content)
+    ab.close()
 def check_queue():
     print("checking")
-    ab = open("queue.txt", "r")
-    lines = ab.readlines()
-    ab.close()
+    lines = readinglines("queue.txt")
     newlist = []
     for a in lines:
         try: 
@@ -61,42 +64,29 @@ def check_queue():
         wlist = []
         for a in newlist:
             wlist.append(a + "\n")
-        ab = open("queue.txt", "w")
-        ab.writelines(wlist)
-        ab.close()
+        writinglines("queue.txt", wlist)
         if yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().filesize <= 150000000:
-        #if True:
-            yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().download()   
-            print(os.listdir())                 
+            yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().download()                  
             for o in os.listdir():
                 if o == "yt.mp3": os.remove("yt.mp3")
-                print("removed")
             for o in os.listdir():
                 if o[-3:] == "mp4": os.rename(o, "yt.mp3")
             source = FFmpegPCMAudio("yt.mp3")
         else:
             gTTS(text="File Too Big", lang="en", slow=False).save("tts.mp3")
             source = FFmpegPCMAudio('tts.mp3')
-        return source
-        
+        return source     
 def voice_queue(vc):
-    ab = open("queue.txt", "r")
-    lines = ab.readlines()
-    ab.close()
+    lines = readinglines("queue.txt")
     if len(lines) == 0:
         return 0
     source = check_queue()
     vc.play(source, after=lambda x=None: voice_queue(vc))
-
 def checkaiimg(message):
     default_credits = 15
     user = message.author.id
-    dfile = open("names.txt", "r")
-    names = dfile.readlines()
-    dfile.close()
-    dfile = open("credits.txt", "r")
-    creditslist = dfile.readlines()
-    dfile.close()
+    names = readinglines("names.txt")
+    creditslist = readinglines("credits.txt")
     infile=False
     indexinfile = 0
     for b,a in enumerate(names):
@@ -105,36 +95,28 @@ def checkaiimg(message):
             indexinfile = b
             break
     if infile == False:
-        dfile = open("names.txt", "w")
         newnames = names
         newnames.append(str(user) + "\n")
-        dfile.writelines(newnames)
-        dfile.close()
-        dfile = open("credits.txt", "w")
+        writinglines("names.txt", newnames)
         newcredits = creditslist
         newcredits.append(str(default_credits) + "\n")
-        dfile.writelines(newcredits)
-        dfile.close()
+        writinglines("credits.txt", newcredits)
         for b,a in enumerate(names):
             if a.rstrip("\n") == str(user): 
                 indexinfile = b
                 break
     if int(creditslist[indexinfile].rstrip("\n")) > 0:
-        dfile = open("credits.txt", "w")
         newcredits = creditslist
         newcredits[indexinfile] = str(int(creditslist[indexinfile].rstrip("\n"))-1) + "\n"
-        dfile.writelines(newcredits)
-        dfile.close()
+        writinglines("credits.txt", newcredits)
         return True, int(creditslist[indexinfile].rstrip("\n"))
     else:
         return False, int(creditslist[indexinfile].rstrip("\n"))
-
 def gpt3(input_text, temp, fpenalty, mt):
     configure()
     openai.api_key = str(os.getenv('AI_Key'))
     response = openai.Completion.create(engine="davinci-instruct-beta", prompt=input_text, temperature=temp, max_tokens=mt, top_p=1, frequency_penalty=fpenalty, presence_penalty=0)
     return response.choices[0].text
-    
 def imgai(prompt, size):
     openai.api_key = str(os.getenv('AI_Key'))
     response = openai.Image.create(prompt=prompt, n=1, size=size)
@@ -161,9 +143,7 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
             if permission == True and admin == False: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             if len(mes[7:].rstrip(" ")) == 0: return discord.Embed(title=".aitemp number", description="changes the temperature of the ai(how random it is) between 0 and 1", color=0xFF5733), 4
             else:
-                data_file = open("data.txt", "r")
-                old_lines = data_file.readlines()
-                data_file.close()
+                old_lines = readinglines("data.txt")
                 counter = 0
                 index = 0
                 for ind,k in enumerate(old_lines):
@@ -172,17 +152,13 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                         counter += 1
                         if counter == 7: index = ind
                 old_lines[index] = mes[7:] + "\n"
-                data_file = open("data.txt", "w")
-                data_file.writelines(old_lines)
-                data_file.close()
+                writinglines("data.txt", old_lines)
         elif check("aifpenalty", mesl):
             permission = True
             if permission == True and admin == False: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             if len(mes[10:].rstrip(" ")) == 0: return discord.Embed(title=".aifpenalty number", description="changes the the penalty for repeating things between 0 and 2", color=0xFF5733), 4
             else:
-                data_file = open("data.txt", "r")
-                old_lines = data_file.readlines()
-                data_file.close()
+                old_lines = readinglines("data.txt")
                 counter = 0
                 index = 0
                 for ind,k in enumerate(old_lines):
@@ -191,9 +167,7 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                         counter += 1
                         if counter == 8: index = ind
                 old_lines[index] = mes[11:] + "\n"
-                data_file = open("data.txt", "w")
-                data_file.writelines(old_lines)
-                data_file.close()
+                writinglines("data.txt", old_lines)
         elif mesl == "aisettings":
             permission = True
             if permission == True and admin == False: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
@@ -218,12 +192,8 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
         elif mesl == "checkcredits":
             default_credits = 15
             user = message.author.id
-            dfile = open("names.txt", "r")
-            names = dfile.readlines()
-            dfile.close()
-            dfile = open("credits.txt", "r")
-            creditslist = dfile.readlines()
-            dfile.close()
+            names = readinglines("names.txt")
+            creditslist = readinglines("credits.txt")
             infile=False
             indexinfile = 0
             for b,a in enumerate(names):
@@ -248,12 +218,8 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                         else:
                             newmesss = mesl[12:].split(" <@")
                             user = int(newmesss[1].rstrip(">"))
-                            dfile = open("names.txt", "r")
-                            names = dfile.readlines()
-                            dfile.close()
-                            dfile = open("credits.txt", "r")
-                            creditslist = dfile.readlines()
-                            dfile.close()
+                            names = readinglines("names.txt")
+                            creditslist = readinglines("credits.txt")
                             infile=False
                             indexinfile = 0
                             for b,a in enumerate(names):
@@ -262,20 +228,16 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                                     indexinfile = b
                                     break
                             if infile:
-                                dfile = open("credits.txt", "w")
                                 newcredits = creditslist
                                 newcredits[indexinfile] = str(int(creditslist[indexinfile].rstrip("\n")) + int(newmesss[0])) + "\n"
-                                dfile.writelines(newcredits)
-                                dfile.close()
+                                writinglines("credits.txt", newcredits)
                                 return discord.Embed(title="Credits Updated", description="Previous balance: " + str(int(creditslist[indexinfile].rstrip("\n"))-int(newmesss[0])) + "\nCurrent balance: " + creditslist[indexinfile].rstrip("\n"), color=0xFF5733), 4
                             else: return discord.Embed(title="Error", description="Hasn't been used yet", color=0xFF5733), 4
                     else: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
                 elif check("admin", mesl[4:]):
                     if me:
                         user = int(mes[12:].rstrip(">"))
-                        data_file = open("data.txt", "r")
-                        old_lines = data_file.readlines()
-                        data_file.close()
+                        old_lines = readinglines("data.txt")
                         counter = 0
                         index = 0
                         for ind,k in enumerate(old_lines):
@@ -284,17 +246,13 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                                 counter += 1
                                 if counter == 1: index = ind
                         old_lines[index] = old_lines[index].rstrip("\n") + "," + str(user) + "\n"
-                        data_file = open("data.txt", "w")
-                        data_file.writelines(old_lines)
-                        data_file.close()
+                        writinglines("data.txt", old_lines)
                         return discord.Embed(title="Admins Updated", description=(client.get_user(user).name + "#" + client.get_user(user).discriminator) + " is now a Admin", color=0xFF5733), 4
                     else: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
                 elif check("dj", mesl[4:]):
                     if admin:
                         user = int(mes[9:].rstrip(">"))
-                        data_file = open("data.txt", "r")
-                        old_lines = data_file.readlines()
-                        data_file.close()
+                        old_lines = readinglines("data.txt")
                         counter = 0
                         index = 0
                         for ind,k in enumerate(old_lines):
@@ -303,9 +261,7 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                                 counter += 1
                                 if counter == 9: index = ind
                         old_lines[index] = old_lines[index].rstrip("\n") + "," + str(user) + "\n"
-                        data_file = open("data.txt", "w")
-                        data_file.writelines(old_lines)
-                        data_file.close()
+                        writinglines("data.txt", old_lines)
                         return discord.Embed(title="DJs Updated", description=(client.get_user(user).name + "#" + client.get_user(user).discriminator) + " is now a DJ", color=0xFF5733), 4
                     else: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
                 else: return discord.Embed(title=".add", description="\"admin\" adds an admin\n\"dj\" adds a DJ\n\"credits\" adds credits to specified user", color=0xFF5733), 4
@@ -317,12 +273,8 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                     else:
                         newmesss = mesl[15:].split(" <@")
                         user = int(newmesss[1].rstrip(">"))
-                        dfile = open("names.txt", "r")
-                        names = dfile.readlines()
-                        dfile.close()
-                        dfile = open("credits.txt", "r")
-                        creditslist = dfile.readlines()
-                        dfile.close()
+                        names = readinglines("names.txt")
+                        creditslist = readinglines("credits.txt")
                         infile=False
                         indexinfile = 0
                         for b,a in enumerate(names):
@@ -344,9 +296,7 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
             if check("admin", mesl[7:]):
                 if me:
                     user = int(mes[15:].rstrip(">"))
-                    data_file = open("data.txt", "r")
-                    old_lines = data_file.readlines()
-                    data_file.close()
+                    old_lines = readinglines("data.txt")
                     counter = 0
                     index = 0
                     for ind,k in enumerate(old_lines):
@@ -355,17 +305,13 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                             counter += 1
                             if counter == 1: index = ind
                     old_lines[index] = "".join(old_lines[index].split("," + str(user)))
-                    data_file = open("data.txt", "w")
-                    data_file.writelines(old_lines)
-                    data_file.close()
+                    writinglines("data.txt", old_lines)
                     return discord.Embed(title="Admins Updated", description=(client.get_user(user).name + "#" + client.get_user(user).discriminator) + " is now not an admin", color=0xFF5733), 4
                 else: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             elif check("dj", mesl[7:]):
                 if admin:
                     user = int(mes[12:].rstrip(">"))
-                    data_file = open("data.txt", "r")
-                    old_lines = data_file.readlines()
-                    data_file.close()
+                    old_lines = readinglines("data.txt")
                     counter = 0
                     index = 0
                     for ind,k in enumerate(old_lines):
@@ -374,9 +320,7 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                             counter += 1
                             if counter == 9: index = ind
                     old_lines[index] = "".join(old_lines[index].split("," + str(user)))
-                    data_file = open("data.txt", "w")
-                    data_file.writelines(old_lines)
-                    data_file.close()
+                    writinglines("data.txt", old_lines)
                     return discord.Embed(title="DJS Updated", description=(client.get_user(user).name + "#" + client.get_user(user).discriminator) + " is now not a DJ", color=0xFF5733), 4
                 else: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             else: return discord.Embed(title=".remove", description="\"admin\" removes an admin\n\"dj\" removes a DJ\n\"credits\" removes credits from specified user", color=0xFF5733), 4
@@ -400,27 +344,13 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
             else:
                 if dj:return discord.Embed(title="Help", description="**prefix: .**\n\n**Commands:**\nlistadmins - Lists all the admins.\nlistdjs - Lists al the DJ's\nembed - Creates a custom embed.(.embed for more info)\ndm - Direct messages you something\n\n**DJ Commands:**\nDirect message the bot .help for more info\n\n**Admin Commands:** \nai - Gives an ai generated response to the prompt\nailast - Generates ai over the last specified messages\naitemp - Modifies the ai temperature(randomness)(0-1)\naifpenalty - Modifies the penalty for the ai for repeating thins(0-2)\naisettings - Check current ai settings\nadd - Adds permisions(.add for more info)\nremove - Removes permisions(.remove for more info)\n\n\n*Created by TWIan#9259 on 10/09/22*", color=0xFF5733), 4
                 else: return discord.Embed(title="Help", description="**prefix: .**\n\n**Commands:**\nlistadmins - Lists all the admins.\nlistdjs - Lists al the DJ's\nembed - Creates a custom embed.(.embed for more info)\ndm - Direct messages you something\n\n**Admin Commands:** \nai - Gives an ai generated response to the prompt\nailast - Generates ai over the last specified messages\naitemp - Modifies the ai temperature(randomness)(0-1)\naifpenalty - Modifies the penalty for the ai for repeating thins(0-2)\naisettings - Check current ai settings\nadd - Adds permisions(.add for more info)\nremove - Removes permisions(.remove for more info)\n\n\n*Created by TWIan#9259 on 10/09/22*", color=0xFF5733), 4
-                
-        '''
-        elif mes == "retro":
-            diff= 1728435600-round(time.time())
-            timeso = [31536000, 2628000, 86400, 3600, 60, 1]
-            times = [math.floor(diff/x) for x in timeso]
-            s = ["s", "s", "s", "s", "s", "s"]
-            if times[0] == 1: s[0] = ""
-            if times[1] - times[0]12 == 1: s[1] = ""
-            if math.floor(times[2]-(times[0]365)) == 1: s[2] = ""
-            if math.floor(times[3] - times[2]24) == 1: s[3] = ""
-            if math.floor(times[4] - times[3]60) == 1: s[4] = ""
-            if math.floor(times[5]- times[4]60) == 1: s[5] = ""
-            return f"{times[0]} year{s[0]}, {times[1] - times[0]12} month{s[1]}, {times[2]-(times[0]365)} day{s[2]}, {times[3] - times[2]24} hour{s[3]}, {times[4] - times[3]60} minute{s[4]}, and {times[5]- times[4]60} second{s[5]}.", 0'''
     except Exception as error:
         print("\nCommand Error")
         print(error)
         print(str(sys.exc_info()[2].tb_lineno) + "\n")
         return ("Command Error: " + str(error)), -1
     return 0, -2
-        
+
 @client.event
 async def on_message(message):
     print(message.content)
@@ -495,12 +425,10 @@ async def on_message(message):
             if message.content[0] == ".":
                 newmes = message.content[1:]
                 print("Processed " + newmes)
+                if len(client.voice_clients) == 1:voice = client.voice_clients[0]
                 if Admin:
                     if check("autosayon", newmes.lower()) and len(client.voice_clients) == 1:
-                        print("file")
-                        data_file = open("data.txt", "r")
-                        old_lines = data_file.readlines()
-                        data_file.close()
+                        old_lines = readinglines("data.txt")
                         counter = 0
                         index = 0
                         index2 = len(old_lines)
@@ -513,18 +441,13 @@ async def on_message(message):
                         old_lines[index] = "1\n"
                         print(newmes.lower()[10:])
                         old_lines[index2] = newmes.lower()[10:]
-                        data_file = open("data.txt", "w")
-                        data_file.writelines(old_lines)
-                        data_file.close()
+                        writinglines("data.txt", old_lines)
                         voice_client = client.voice_clients[0]
                         gTTS(text="AUTO AI SAY ON", lang="en", slow=False).save("tts.mp3")
                         source = FFmpegPCMAudio('tts.mp3')
-                        player = voice_client.play(source)
+                        player = voice.play(source)
                     if check("autosayoff", newmes.lower()) and len(client.voice_clients) == 1:
-                        print("file")
-                        data_file = open("data.txt", "r")
-                        old_lines = data_file.readlines()
-                        data_file.close()
+                        old_lines = readinglines("data.txt")
                         counter = 0
                         index = 0
                         index2 = 0
@@ -536,28 +459,20 @@ async def on_message(message):
                                 if counter == 11: index2 = ind
                         old_lines[index] = "0\n"
                         old_lines[index2] = "0\n"
-                        data_file = open("data.txt", "w")
-                        data_file.writelines(old_lines)
-                        data_file.close()
-                        voice_client = client.voice_clients[0]
+                        writinglines("data.txt", old_lines)
                         gTTS(text="AUTO AI SAY IS NOW OFF", lang="en", slow=False).save("tts.mp3")
                         source = FFmpegPCMAudio('tts.mp3')
-                        player = voice_client.play(source)
+                        player = voice.play(source)
                 if check("join", newmes.lower()):
                     mestoid = newmes[5:]
-                    
                     if len(newmes[5:].lower().rstrip(" ")) == 0: 
-                        #await message.reply(embed=discord.Embed(title=".join", description="format: .join voice-channel-id\n\nexample: .join 298105398793827985\n\n\n\n  TO FIND THE VOICE CHANNEL ID turn on discord developer mode.  LOOK UP HOW TO!!! and then right click on the desired voice channel and at the bottom of the popup should be something saying copy id.", color=0xFF5733))
-                        #return 0
                         h = message.author.id
                         outv = getvcsearch(h, client)
                         if outv[1] == False:
                             await message.reply(embed=discord.Embed(title="Not in a voice channel", description="Join a voice channel for the bot to join", color=0xFF5733))
                             return 0
                         else: mestoid = outv[0]
-
                     if len(client.voice_clients) == 0:
-                        
                         ch_id = int(mestoid) 
                         print(ch_id)
                         if len(client.get_channel(ch_id).members) >= 1: 
@@ -570,9 +485,7 @@ async def on_message(message):
                     if len(client.voice_clients) == 1:
                         await client.voice_clients[0].disconnect()
                         await message.reply(embed=discord.Embed(title="Voice channel left", color=0xFF5733))
-                        ab = open("queue.txt", "w")
-                        ab.writelines([])
-                        ab.close()
+                        writinglines("queue.txt", [])
                         data_file = open("data.txt", "r")
                         old_lines = data_file.readlines()
                         data_file.close()
@@ -587,9 +500,7 @@ async def on_message(message):
                                 if counter == 11: index2 = ind
                         old_lines[index] = "0\n"
                         old_lines[index2] = "0\n"
-                        data_file = open("data.txt", "w")
-                        data_file.writelines(old_lines)
-                        data_file.close()
+                        writinglines("data.txt", old_lines)
                     else: await message.reply(embed=discord.Embed(title="Not in A voice Channel", color=0xFF5733))
                 if newmes.lower() == "help": await message.reply(embed=discord.Embed(title="DJ Commands", description="\n**Prefix: .**\n\n**Commands**\njoin - joins the specified voice channel(do .join for more info)\n.leave - leaves the voice channel\n.say - using tts says the message(.say for more info)\n.pause - pauses the audio\n.unpause - unpauses the audio\n.play - CURRENTLY NOT IMPLEMENTED", color=0xFF5733))
                 if check("say", newmes.lower()):
@@ -597,9 +508,7 @@ async def on_message(message):
                         await message.reply(embed=discord.Embed(title=".say", description="format: .say message|language|slow\n\nexample: .say hello there|it|true\n\n some languages work some don't but most common ones do.  Not all options are required but they do have to be in order.\n\n .say hello there   WORKS\n.say hello there|en    WORKS\n.say hello there|true DOESN'T WORK", color=0xFF5733))
                         return 0
                     if len(client.voice_clients) == 1:
-                        voice = client.voice_clients[0]
                         if not(voice.is_playing() or voice.is_paused()):
-                            voice_client = client.voice_clients[0]
                             messager = str(newmes[4:]) 
                             accent = 'it'
                             slowed = False
@@ -613,14 +522,12 @@ async def on_message(message):
                                     if a.rstrip(" ").lower() == 'true': slowed = True
                             gTTS(text=out, lang=accent, slow=slowed).save("tts.mp3")
                             source = FFmpegPCMAudio('tts.mp3')
-                            player = voice_client.play(source)
-                        
+                            player = voice.play(source)     
                     else: await message.reply(embed=discord.Embed(title="Not in A voice Channel", color=0xFF5733))
                 if check("play", newmes.lower()):
                     if len(newmes[5:].lower().rstrip(" ")) == 0: return 0 
                     if len(client.voice_clients) == 1:
                         messager = str(newmes[5:]) 
-                        voice = client.voice_clients[0]
                         if not(voice.is_playing() or voice.is_paused()):
                             print(messager[0:7])
                             if messager[0:8] != "https://":
@@ -633,7 +540,6 @@ async def on_message(message):
                             print(yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().filesize)
                             if yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().filesize <= 150000000:
                                 yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().download()
-                                
                                 for o in os.listdir():
                                     if o == "yt.mp3":
                                         os.remove("yt.mp3")
@@ -665,18 +571,13 @@ async def on_message(message):
                     else: await message.reply(embed=discord.Embed(title="Not in A voice Channel", color=0xFF5733))
                 if newmes.lower() == "pause":
                     if len(client.voice_clients) == 1:
-                        voice = client.voice_clients[0]
-                        if voice.is_playing():
-                            voice.pause()
+                        if voice.is_playing(): voice.pause()
                     else: await message.reply(embed=discord.Embed(title="Not in A voice Channel", color=0xFF5733))
                 if newmes.lower() == "unpause":
                     if len(client.voice_clients) == 1:
-                        voice = client.voice_clients[0]
-                        if voice.is_paused():
-                            voice.resume()
+                        if voice.is_paused():voice.resume()
                     else: await message.reply(embed=discord.Embed(title="Not in A voice Channel", color=0xFF5733))
                 if newmes.lower() == "skip":
-                    voice = client.voice_clients[0]
                     voice.stop()
                     voice_queue(voice)
                     await message.reply(embed=discord.Embed(title="Skipped", color=0xFF5733))
@@ -684,25 +585,19 @@ async def on_message(message):
                     ab = open("queue.txt", "r")
                     lines = ab.readlines()
                     ab.close()
-                    if len(lines) == 0:
-                        await message.reply(embed=discord.Embed(title="No Queue", color=0xFF5733))
+                    if len(lines) == 0: await message.reply(embed=discord.Embed(title="No Queue", color=0xFF5733))
                     else:
                         out = ""
                         for b,c in enumerate(lines):
-                            title = YouTube(c.rstrip("\n"))
-                            title = str(title.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().title)
+                            title = str(YouTube(c.rstrip("\n")).streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first().title)
                             if b == 0: out += str(b+1) + ". " + title
                             else: out += "\n" + str(b+1) + ". " + title
                         await message.reply(embed=discord.Embed(title="Queue", description=out, color=0xFF5733))
                 if newmes.lower() == "stop":
                     if len(client.voice_clients) == 1:
-                        voice = client.voice_clients[0]
                         voice.stop()
-                        ab = open("queue.txt", "w")
-                        ab.writelines([])
-                        ab.close()
+                        writinglines("queue.txt", [])
                     else: await message.reply(embed=discord.Embed(title="Not in A voice Channel", color=0xFF5733))
-
         if str(message.author.name) != "TWIan" and str(message.author.name) != "TWbot" and DMDM:
             print("\n" + str(time.ctime(time.time())) + "  " + str(message.author.name) + ": " + str(message.content))
             user = client.get_user(os.getenv('Master_ID'))
@@ -713,73 +608,41 @@ async def on_message(message):
             if len(message.content) == 0: return 0
             if message.content[0] == ".":
                 try:
-                    if check("ailast", message.content[1:].lower()):
-                        permission = True
-                        if permission == True and Admin == False:
-                            if not(me): return 0 
-                            await message.reply(embed=discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733))
-                            return 0
-                        if len(message.content[7:].rstrip(" ")) == 0: await message.reply(embed=discord.Embed(title=".ailast number", description="Creates an ai message based on the last number of messages", color=0xFF5733))
-                        else:
-                            try:
-                                numberai = int(message.content[7:].rstrip(" "))
-                                if numberai > 10 or numberai < 1: raise Exception
-                                newout = ""
-                                counters = 0
-                                for j in [i async for i in message.channel.history(limit=100)]:
-                                    if counters >= numberai: break
-                                    if len(j.content.rstrip(" ")) == 0:continue
-                                    if j.content[0] != "." and j.author.id != os.getenv('Discord_ID'): 
-                                        counters += 1
-                                        if len(newout) == 0:newout += j.content
-                                        else: newout += "\n" + j.content
-                                print(len(newout))
-                                if len(newout) > 300: raise Exception
-                                await message.reply(gpt3(newout, temp, fpenalty, 300))
-                            except: await message.reply(embed=discord.Embed(title="Error", description="you must input a number between 1 and 10 and message lengths must be under 300 characters", color=0xFF5733))
-                    else:
-                        # out_types
-                        # -2 Not a command
-                        # -1 Error print
-                        # 0 Print
-                        # 1 Embed
-                        # 2 Direct message author
-                        # 3 Print reply
-                        # 4 Embed reply
-                        # 5 Specific direct message(can be multiple)
-                        # 6 link embed
-                        out, out_type = Message_Function(message, Admin, me, Admins, Bot_DM, temp, fpenalty, djs, dj)
-                        if out_type == 0: await message.channel.send(out)
-                        elif out_type == 1: await message.channel.send(embed=out)
-                        elif out_type == 2: await message.author.send(out)
-                        elif out_type == 3: await message.reply(out)
-                        elif out_type == 4: await message.reply(embed=out)
-                        elif out_type == 5:
-                            for b,a in enumerate(out[1]):
-                                if a == 0: user = message.author
-                                else: user = client.get_user(a)
-                                if type(out[0]) == str:
-                                    print("str")
-                                    await user.send(out[0]) 
-                                else:
-                                    await user.send(out[0][b]) 
-                        elif out_type == 6:
-                            embed=discord.Embed(title=out[1] + message.content[9:], color=0xFF5733)
-                            embed.set_image(url=out[0])
-                            await message.reply(embed=embed)
-                        elif out_type == -1: await message.channel.send(out)
-                        elif out_type == -2: 
-                            print("No Command Found")
-                            if Not_a_command: await message.channel.send("Not A Command <@" + str(message.author.id) + ">")
-                            else: return 0
+                    # out_types
+                    # -2 Not a command
+                    # -1 Error print
+                    # 0 Print
+                    # 1 Embed
+                    # 2 Direct message author
+                    # 3 Print reply
+                    # 4 Embed reply
+                    # 5 Specific direct message(can be multiple)
+                    # 6 link embed
+                    out, out_type = Message_Function(message, Admin, me, Admins, Bot_DM, temp, fpenalty, djs, dj)
+                    if out_type == 0: await message.channel.send(out)
+                    elif out_type == 1: await message.channel.send(embed=out)
+                    elif out_type == 2: await message.author.send(out)
+                    elif out_type == 3: await message.reply(out)
+                    elif out_type == 4: await message.reply(embed=out)
+                    elif out_type == 5:
+                        for b,a in enumerate(out[1]):
+                            if a == 0: user = message.author
+                            else: user = client.get_user(a)
+                            if type(out[0]) == str: await user.send(out[0]) 
+                            else: await user.send(out[0][b]) 
+                    elif out_type == 6:
+                        embed=discord.Embed(title=out[1] + message.content[9:], color=0xFF5733)
+                        embed.set_image(url=out[0])
+                        await message.reply(embed=embed)
+                    elif out_type == -1: await message.channel.send(out)
+                    elif out_type == -2: 
+                        print("No Command Found")
+                        if Not_a_command: await message.channel.send("Not A Command <@" + str(message.author.id) + ">")
+                        else: return 0
                 except Exception as error: 
-                    await message.channel.send("Command Out Error: " + str(error))
-                    print("\nCommand Out Error")
-                    print(error)
-                    print(str(sys.exc_info()[2].tb_lineno) + "\n")
+                    await message.channel.send("Command Out Error")
+                    print("\nCommand Out Error\n" + str(error) + "\n" + str(sys.exc_info()[2].tb_lineno) + "\n")
         except:
-            await message.channel.send("Main Error: " + str(error))
-            print("\nMain Error")
-            print(error)
-            print(str(sys.exc_info()[2].tb_lineno) + "\n")
+            await message.channel.send("Main Error")
+            print("\nMain Error\n" + str(error) + "\n" + str(sys.exc_info()[2].tb_lineno) + "\n")
 client.run(Token)
