@@ -131,7 +131,7 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
             if permission == True and admin == False: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             if len(mes[7:].rstrip(" ")) == 0: return discord.Embed(title=".aitemp number", description="changes the temperature of the ai(how random it is) between 0 and 1", color=0xFF5733), 4
             else:
-                old_lines,counter.index = readinglines("data.txt"),0,0
+                old_lines,counter,index = readinglines("data.txt"),0,0
                 for ind,k in enumerate(old_lines):
                     if k[0] == "#": continue
                     else: 
@@ -139,12 +139,13 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                         if counter == 7: index = ind
                 old_lines[index] = mes[7:] + "\n"
                 writinglines("data.txt", old_lines)
+                return discord.Embed(title="Ai settings", description="temperature: " + str(mes[7:]) + "\n\nfrequency penalty: " + str(fpenalty), color=0xFF5733), 4
         elif check("aifpenalty", mesl):
             permission = True
             if permission == True and admin == False: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
             if len(mes[10:].rstrip(" ")) == 0: return discord.Embed(title=".aifpenalty number", description="changes the the penalty for repeating things between 0 and 2", color=0xFF5733), 4
             else:
-                old_lines,counter.index = readinglines("data.txt"),0,0
+                old_lines,counter,index = readinglines("data.txt"),0,0
                 for ind,k in enumerate(old_lines):
                     if k[0] == "#": continue
                     else: 
@@ -152,6 +153,7 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                         if counter == 8: index = ind
                 old_lines[index] = mes[11:] + "\n"
                 writinglines("data.txt", old_lines)
+                return discord.Embed(title="Ai settings", description="temperature: " + str(temp) + "\n\nfrequency penalty: " + str(mes[11:]), color=0xFF5733), 4
         elif mesl == "aisettings":
             permission = True
             if permission == True and admin == False: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
@@ -185,12 +187,13 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                 ai_out = gpt3(mes[3:], temp, fpenalty, 300)
                 return ai_out, 3
         elif check("add", mesl):
-            try:
+            #try:
+            if True:
                 if check("credits", mesl[4:]):
                     if admin:
                         if len(mesl[12:]) == 0: return discord.Embed(title="Add credits", description=".add credits *credits* *user*", color=0xFF5733), 4
                         else:
-                            newmesss, user, names, creditslist, infile, indexinfile = mesl[12:].split(" <@"), int(newmesss[1].rstrip(">")), readinglines("names.txt"), readinglines("credits.txt"), False, 0
+                            newmesss, user, names, creditslist, infile, indexinfile = mesl[12:].split(" <@"), int(mesl[12:].split(" <@")[1].rstrip(">")), readinglines("names.txt"), readinglines("credits.txt"), False, 0
                             for b,a in enumerate(names):
                                 if a.rstrip("\n") == str(user): 
                                     infile,indexinfile = True,b
@@ -227,13 +230,13 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
                         return discord.Embed(title="DJs Updated", description=(client.get_user(user).name + "#" + client.get_user(user).discriminator) + " is now a DJ", color=0xFF5733), 4
                     else: return discord.Embed(title="No", description="Insuffecient Permissions", color=0xFF5733), 4
                 else: return discord.Embed(title=".add", description="\"admin\" adds an admin\n\"dj\" adds a DJ\n\"credits\" adds credits to specified user", color=0xFF5733), 4
-            except: return discord.Embed(title=".add", description="\"admin\" adds an admin\n\"dj\" adds a DJ", color=0xFF5733), 4
+            #except: return discord.Embed(title=".add", description="\"admin\" adds an admin\n\"dj\" adds a DJ", color=0xFF5733), 4
         elif check ("remove", mesl):
             if check("credits", mesl[7:]):
                 if admin:
                     if len(mesl[15:]) == 0: return discord.Embed(title="Remove credits", description=".remove credits *credits* *user*", color=0xFF5733), 4
                     else:
-                        newmesss,user,names,creditslist,infile,indexinfile = mesl[15:].split(" <@"),int(newmesss[1].rstrip(">")),readinglines("names.txt"),readinglines("credits.txt"),False,0
+                        newmesss,user,names,creditslist,infile,indexinfile = mesl[15:].split(" <@"),int(mesl[15:].split(" <@")[1].rstrip(">")),readinglines("names.txt"),readinglines("credits.txt"),False,0
                         for b,a in enumerate(names):
                             if a.rstrip("\n") == str(user): 
                                 infile,indexinfile = True,b
@@ -286,11 +289,10 @@ def Message_Function(message, admin, me, Admins, botdm, temp, fpenalty, djs, dj)
             return discord.Embed(title="DJ's", description=out, color=0xFF5733), 4
         elif mesl == "help": 
             if not(admin):
-                if dj: return discord.Embed(title="Help", description="**prefix: .**\n\n**Commands:**\nlistadmins - Lists all the admins.\nlistdjs - Lists al the DJ's\nembed - Creates a custom embed.(.embed for more info)\ndm - Direct messages you something\n\n**DJ Commands:**\nDirect message the bot .help for more info\n\n\n*Created by TWIan#9259 on 10/09/22*", color=0xFF5733), 4
-                else: return discord.Embed(title="Help", description="**prefix: .**\n\n**Commands:**\nlistadmins - Lists all the admins.\nlistdjs - Lists al the DJ's\nembed - Creates a custom embed.(.embed for more info)\ndm - Direct messages you something\n\n\n*Created by TWIan#9259 on 10/09/22*", color=0xFF5733), 4
+                if dj: return discord.Embed(title="Help", description="**prefix: .**\n\n**Commands:**\nai - Gives an ai generated response to the prompt\nlistadmins - Lists all the admins.\nlistdjs - Lists al the DJ's\nembed - Creates a custom embed.(.embed for more info)\ndm - Direct messages you something\ncheckcredits - check the amount of credits you currently have\n\n**DJ Commands:**\nDirect message the bot .help for more info\n\n\n*Created by TWIan#9259 on 10/09/22*", color=0xFF5733), 4
+                else: return discord.Embed(title="Help", description="**prefix: .**\n\n**Commands:**\nai - Gives an ai generated response to the prompt\nlistadmins - Lists all the admins.\nlistdjs - Lists al the DJ's\nembed - Creates a custom embed.(.embed for more info)\ndm - Direct messages you something\ncheckcredits - check the amount of credits you currently have\n\n\n*Created by TWIan#9259 on 10/09/22*", color=0xFF5733), 4
             else:
-                if dj:return discord.Embed(title="Help", description="**prefix: .**\n\n**Commands:**\nlistadmins - Lists all the admins.\nlistdjs - Lists al the DJ's\nembed - Creates a custom embed.(.embed for more info)\ndm - Direct messages you something\n\n**DJ Commands:**\nDirect message the bot .help for more info\n\n**Admin Commands:** \nai - Gives an ai generated response to the prompt\nailast - Generates ai over the last specified messages\naitemp - Modifies the ai temperature(randomness)(0-1)\naifpenalty - Modifies the penalty for the ai for repeating thins(0-2)\naisettings - Check current ai settings\nadd - Adds permisions(.add for more info)\nremove - Removes permisions(.remove for more info)\n\n\n*Created by TWIan#9259 on 10/09/22*", color=0xFF5733), 4
-                else: return discord.Embed(title="Help", description="**prefix: .**\n\n**Commands:**\nlistadmins - Lists all the admins.\nlistdjs - Lists al the DJ's\nembed - Creates a custom embed.(.embed for more info)\ndm - Direct messages you something\n\n**Admin Commands:** \nai - Gives an ai generated response to the prompt\nailast - Generates ai over the last specified messages\naitemp - Modifies the ai temperature(randomness)(0-1)\naifpenalty - Modifies the penalty for the ai for repeating thins(0-2)\naisettings - Check current ai settings\nadd - Adds permisions(.add for more info)\nremove - Removes permisions(.remove for more info)\n\n\n*Created by TWIan#9259 on 10/09/22*", color=0xFF5733), 4
+                return discord.Embed(title="Help", description="**prefix: .**\n\n**Commands:**\nai - Gives an ai generated response to the prompt\nlistadmins - Lists all the admins.\nlistdjs - Lists al the DJ's\nembed - Creates a custom embed.(.embed for more info)\ndm - Direct messages you something\ncheckcredits - check the amount of credits you currently have\n\n**DJ Commands:**\nDirect message the bot .help for more info\n\n**Admin Commands:**\naitemp - Modifies the ai temperature(randomness)(0-1)\naifpenalty - Modifies the penalty for the ai for repeating thins(0-2)\naisettings - Check current ai settings\naiimage - generates an ai image based on the input text\nadd - Adds permisions(.add for more info)\nremove - Removes permisions(.remove for more info)\n\n\n*Created by TWIan#9259 on 10/09/22*", color=0xFF5733), 4
     except Exception as error:
         print("\nCommand Error")
         print(error)
@@ -415,7 +417,7 @@ async def on_message(message):
                         print(ch_id)
                         if len(client.get_channel(ch_id).members) >= 1: 
                             await client.get_channel(ch_id).connect()
-                            await message.reply(embed=discord.Embed(title="Voice channel Joined", description=".join\n.leave\n.say\n.pause\n.unpause\n.play", color=0xFF5733))
+                            await message.reply(embed=discord.Embed(title="Voice channel Joined", description=".help\n\n.join\n.leave\n.say\n.pause\n.unpause\n.play\n.skip\n.queue\n.stop,", color=0xFF5733))
                         else:
                             await message.reply(embed=discord.Embed(title="No one in voice channel", description="someone needs to be in the channel to connect", color=0xFF5733))
                     else:message.reply(embed=discord.Embed(title="Already in voice channel", color=0xFF5733))
@@ -435,7 +437,7 @@ async def on_message(message):
                         old_lines[index2] = "0\n"
                         writinglines("data.txt", old_lines)
                     else: await message.reply(embed=discord.Embed(title="Not in A voice Channel", color=0xFF5733))
-                if newmes.lower() == "help": await message.reply(embed=discord.Embed(title="DJ Commands", description="\n**Prefix: .**\n\n**Commands**\njoin - joins the specified voice channel(do .join for more info)\n.leave - leaves the voice channel\n.say - using tts says the message(.say for more info)\n.pause - pauses the audio\n.unpause - unpauses the audio\n.play - CURRENTLY NOT IMPLEMENTED", color=0xFF5733))
+                if newmes.lower() == "help": await message.reply(embed=discord.Embed(title="DJ Commands", description="\n**Prefix: .**\n\n**Commands**\njoin - joins your voice channel\n.leave - leaves the voice channel\n.say - using tts says the message(.say for more info)\n.pause - pauses the audio\n.play\n.unpause - unpauses the audio\n.skip - skip song in queue\n.stop - stops the bot from playing music\nqueue - lists the queue for the videos", color=0xFF5733))
                 if check("say", newmes.lower()):
                     if len(newmes[4:].lower().rstrip(" ")) == 0: 
                         await message.reply(embed=discord.Embed(title=".say", description="format: .say message|language|slow\n\nexample: .say hello there|it|true\n\n some languages work some don't but most common ones do.  Not all options are required but they do have to be in order.\n\n .say hello there   WORKS\n.say hello there|en    WORKS\n.say hello there|true DOESN'T WORK", color=0xFF5733))
@@ -529,7 +531,7 @@ async def on_message(message):
                     else: await message.reply(embed=discord.Embed(title="Not in A voice Channel", color=0xFF5733))
         if str(message.author.name) != "TWIan" and str(message.author.name) != "TWbot" and DMDM:
             print("\n" + str(time.ctime(time.time())) + "  " + str(message.author.name) + ": " + str(message.content))
-            user = client.get_user(os.getenv('Master_ID'))
+            user = client.get_user(int(os.getenv('Master_ID')))
             await user.send("\n" + str(time.ctime(time.time())) + "  " + str(message.author.name) + ": " + str(message.content))
     else:
         try:
